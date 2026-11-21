@@ -3,6 +3,7 @@ name: Publish Hong Kong on Foot
 on:
   push:
     branches: [main]
+    paths: [site-bundle/map-c.zip]
   workflow_dispatch:
 
 permissions:
@@ -22,7 +23,9 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Unpack the map
         run: |
-          cat site-bundle/map.zip.* > "${RUNNER_TEMP}/map.zip"
+          cat site-bundle/map.zip.a > "${RUNNER_TEMP}/map.zip"
+          unzip -p site-bundle/map-b.zip map.zip.b >> "${RUNNER_TEMP}/map.zip"
+          unzip -p site-bundle/map-c.zip map.zip.c >> "${RUNNER_TEMP}/map.zip"
           unzip -q "${RUNNER_TEMP}/map.zip" -d _site
           test -f _site/index.html
           test -f _site/manifest.webmanifest
