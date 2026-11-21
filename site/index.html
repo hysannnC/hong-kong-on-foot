@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#123530">
+<meta name="description" content="Find walking routes and compare pedestrian access across Hong Kong.">
+<title>Hong Kong on Foot · 步行香港地圖</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="vendor/maplibre-gl.css">
+<link rel="stylesheet" href="style.css">
+<script defer src="vendor/leaflet.js"></script>
+<script defer src="vendor/maplibre-gl.js"></script>
+<script defer src="vendor/maplibre-leaflet.js"></script>
+<script defer src="vendor/proj4.js"></script>
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./"><img src="icons/icon-192.png" alt="" width="38" height="38"><span><strong data-t="name">Hong Kong on Foot</strong><small data-t="alternate">步行香港地圖</small></span></a>
+  <div class="head-actions">
+    <button id="switch-mode" hidden></button>
+    <button id="language" lang="zh-Hant">繁體中文</button>
+    <button id="share" class="accent" data-t="share" hidden>Copy map link</button>
+  </div>
+</header>
+<main>
+  <section class="map-frame" aria-label="Interactive map" data-label="mapLabel">
+    <div id="map"></div>
+    <div id="map-3d" aria-hidden="true"></div>
+    <div class="view-control">
+      <div class="view-toggle" role="group" data-label="mapView" aria-label="Map view">
+        <button id="view-2d" type="button" aria-pressed="true" data-t="view2d">2D</button>
+        <button id="view-3d" type="button" aria-pressed="false" data-t="view3d">3D</button>
+      </div>
+      <p id="view-status" role="status" hidden></p>
+    </div>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <section id="live-guidance" class="live-guidance" aria-label="Live guidance" data-label="live" hidden>
+      <div id="live-message" role="status" aria-live="polite"></div>
+      <p id="live-distance" class="subtle"></p>
+      <div class="live-actions">
+        <button id="live-recenter" type="button" data-t="recenter">Recenter</button>
+        <button id="live-voice" type="button" aria-pressed="false" data-t="voice">Voice</button>
+        <button id="live-stop" type="button" data-t="stop">End</button>
+      </div>
+    </section>
+    <div class="legend" id="legend" hidden>
+      <strong data-t="legend">Walking time</strong>
+      <div id="legend-gradient"></div>
+      <div id="legend-ticks"></div>
+      <div id="legend-reference" hidden><i></i><span data-t="onlyAdult">Adult baseline only</span></div>
+    </div>
+  </section>
+  <aside id="panel" class="panel" data-label="settings" aria-label="Walking settings" inert>
+    <div class="panel-heading">
+      <h1 id="panel-title"></h1>
+      <p class="muted" id="panel-hint"></p>
+    </div>
+    <div id="public-tabs" class="tabs">
+      <button id="explore-tab" data-t="explore" aria-pressed="true">Explore</button>
+      <button id="directions-tab" data-t="directions" aria-pressed="false">Directions</button>
+    </div>
+    <section class="section origin">
+      <label for="place" id="origin-label"></label>
+      <div class="inline"><select id="place"></select><button id="locate" data-t="locate">Locate me</button></div>
+      <form id="address-form" class="inline"><input id="address" type="search" autocomplete="off" data-placeholder="addressHint" data-label="addressHint"><button data-t="search">Search</button></form>
+      <div id="address-results" class="matches" role="region" data-label="addressMatches" hidden></div>
+    </section>
+    <section id="scenario" class="section fields">
+      <div id="time-field">
+        <span class="label" id="time-label" data-t="time">Walking time</span>
+        <div id="times" role="group" aria-labelledby="time-label" class="pills"></div>
+      </div>
+      <div class="field">
+        <label for="profile" data-t="profile">Walking profile</label>
+        <select id="profile"></select>
+        <p class="subtle" id="profile-note"></p>
+      </div>
+      <fieldset id="terrain-field" class="terrain-field">
+        <legend class="label" data-t="terrain">Hills</legend>
+        <div class="pills" id="terrain-options" aria-describedby="terrain-note">
+          <button type="button" id="terrain-gentle" aria-pressed="false" data-t="gentle">Gentler paths only</button>
+          <button type="button" id="terrain-all" aria-pressed="false" data-t="allHills">Allow steeper hills</button>
+        </div>
+        <p id="terrain-note" class="subtle"></p>
+      </fieldset>
+      <details id="options">
+        <summary data-t="routeOptions">Route options</summary>
+        <div class="option-fields">
+          <label class="check"><input type="checkbox" id="stairs"><span data-t="stairs">Avoid stairs and escalators</span></label>
+          <label class="check"><input type="checkbox" id="hills"><span data-t="hills">Adjust for slopes</span></label>
+          <label for="slope" id="planner-slope" class="inline slope"><span data-t="maxSlope">Maximum grade</span><select id="slope"><option value="0" data-t="anyGrade">Any grade</option><option value="5">5%</option><option value="8">8%</option><option value="12">12%</option></select></label>
+          <p class="subtle" data-t="accessNote">Mapped paths only. Check access and lift availability before travel.</p>
+        </div>
+      </details>
+    </section>
+    <div id="reach-feedback" class="section" hidden>
+      <p id="reach-status" role="status"></p>
+      <button id="retry-reach" type="button" data-t="retry" hidden>Try again</button>
+    </div>
+    <section id="explore-panel" class="section" hidden>
+      <h2 data-t="reachable">Places within reach</h2>
+      <div id="categories" class="categories"></div>
+      <label class="check"><input id="accessible" type="checkbox"><span data-t="tagged">Only wheelchair-tagged places</span></label>
+      <p id="nearby-sort" class="subtle" data-t="nearest" hidden>Sorted by walking distance</p>
+      <div id="nearby"></div>
+    </section>
+    <section id="route-panel" class="section" hidden>
+      <h2 data-t="destination">Destination</h2>
+      <label for="destination" class="sr-only" data-t="destination">Destination</label>
+      <input id="destination" type="search" autocomplete="off" data-placeholder="destinationHint">
+      <div id="destination-results" class="matches" role="region" data-label="destination" hidden></div>
+      <div id="route-selected" class="route-picked" hidden></div>
+      <div id="route-info" role="status" aria-live="polite"></div>
+      <button id="start-guide" class="accent" type="button" data-t="startGuide" hidden>Start live guidance</button>
+      <p id="guide-feedback" class="subtle" role="status"></p>
+      <ol id="route-steps" class="steps"></ol>
+    </section>
+    <section id="planner-panel" class="section" hidden>
+      <h2 data-t="comparison">Accessibility comparison</h2>
+      <p id="sample-label" class="subtle"></p>
+      <div class="metrics" id="metrics"></div>
+      <label class="check"><input id="show-barriers" type="checkbox"><span data-t="showBarriers">Show mapped barriers</span></label>
+      <label class="check"><input id="show-area" type="checkbox"><span data-t="showArea">Show approximate reach area</span></label>
+      <div class="table-scroll"><table><thead><tr><th data-t="facility">Facility</th><th data-t="adultShort">Adult</th><th data-t="selectedShort">Selected</th><th data-t="fewer">Fewer</th></tr></thead><tbody id="metrics-rows"></tbody></table></div>
+      <details id="district-comparison">
+        <summary data-t="districtComparison">Compare all 18 districts</summary>
+        <p class="subtle" data-t="districtMethod"></p>
+        <label for="district-facility" class="label" data-t="facility"></label>
+        <select id="district-facility"></select>
+        <div class="table-scroll"><table><thead><tr><th data-t="district"></th><th data-t="adultShort"></th><th data-t="selectedShort"></th><th data-t="fewer"></th></tr></thead><tbody id="district-rows"></tbody></table></div>
+      </details>
+      <h3 data-t="audit">Field-audit priorities</h3>
+      <ul id="findings" class="findings"></ul>
+      <div class="exports"><button id="csv" data-t="csv">CSV</button><button id="geo" data-t="geo">GeoJSON</button><button id="print" data-t="pdf">Print / PDF</button></div>
+    </section>
+    <details class="section sources">
+      <summary data-t="methods">Data, method and walking speeds</summary>
+      <p data-t="methodText"></p>
+      <p data-t="snapshot"></p>
+      <p><a href="brands/credits.html" data-t="brandCredits">Map logo credits</a></p>
+      <p data-t="gradeMethod"></p>
+      <p><a href="https://www.archsd.gov.hk/archsd/html/ua/06a-chapter6.pdf" data-t="gradeSource">Hong Kong universal accessibility guidance</a></p>
+      <ul id="evidence"></ul>
+      <p><a href="https://data.gov.hk/en-data/dataset/hk-landsd-openmap-3d-pedestrian-network" data-t="networkSource">Lands Department 3D Pedestrian Network</a> · <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://www.census2021.gov.hk/doc/pub/21c-summary-results.pdf" data-t="censusSource">2021 Population Census, Table 7.3</a></p>
+    </details>
+    <button id="install-help" class="install-link" data-t="install">Install on your phone</button>
+  </aside>
+</main>
+<dialog id="welcome" aria-labelledby="welcome-title">
+  <div class="welcome-top"><img src="icons/icon-192.png" alt="" width="46" height="46"><button id="welcome-language" type="button" lang="zh-Hant">繁體中文</button></div>
+  <h1 id="welcome-title" data-t="welcome">How do you want to use the map?</h1>
+  <p class="muted" data-t="welcomeDesc">See how far you can get on foot across Hong Kong.</p>
+  <div class="role-options">
+    <button data-mode="public"><strong data-t="public">Public map</strong><span data-t="publicDesc">Find nearby places and get walking directions.</span></button>
+    <button data-mode="planner"><strong data-t="planner">Urban planner</strong><span data-t="plannerDesc">Compare access across walking profiles and export your analysis.</span></button>
+  </div>
+</dialog>
+<dialog id="install-dialog" aria-labelledby="install-title">
+  <h2 id="install-title" data-t="install">Install on your phone</h2>
+  <p data-t="installHelp"></p>
+  <form method="dialog"><button data-t="close">Close</button></form>
+</dialog>
+<noscript>This map needs JavaScript. 此地圖須啟用 JavaScript。</noscript>
+</body>
+</html>

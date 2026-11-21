@@ -3,7 +3,7 @@ name: Publish Hong Kong on Foot
 on:
   push:
     branches: [main]
-    paths: [site-bundle/map-c.zip]
+    paths: ['site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -21,18 +21,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/configure-pages@v5
-      - name: Unpack the map
+      - name: Check map and install assets
         run: |
-          cat site-bundle/map.zip.a > "${RUNNER_TEMP}/map.zip"
-          unzip -p site-bundle/map-b.zip map.zip.b >> "${RUNNER_TEMP}/map.zip"
-          unzip -p site-bundle/map-c.zip map.zip.c >> "${RUNNER_TEMP}/map.zip"
-          unzip -q "${RUNNER_TEMP}/map.zip" -d _site
-          test -f _site/index.html
-          test -f _site/manifest.webmanifest
-          test -f _site/sw.js
+          test -f site/index.html
+          test -f site/manifest.webmanifest
+          test -f site/sw.js
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: _site
+          path: site
 
   deploy:
     needs: build

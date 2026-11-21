@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "Hong Kong on Foot · 步行香港地圖",
+  "short_name": "HK on Foot",
+  "description": "Walking reach and directions across Hong Kong",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fcfdfb",
+  "theme_color": "#123530",
+  "icons": [
+    {"src":"icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
