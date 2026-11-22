@@ -36,12 +36,25 @@
         <button id="view-2d" type="button" aria-pressed="true" data-t="view2d">2D</button>
         <button id="view-3d" type="button" aria-pressed="false" data-t="view3d">3D</button>
       </div>
+      <details class="map-settings">
+        <summary data-t="mapOptions">Map options</summary>
+        <label for="pin-size" data-t="pinSize">Marker size</label>
+        <select id="pin-size">
+          <option value="22" data-t="sizeSmall">Small</option>
+          <option value="28" data-t="sizeMedium">Medium</option>
+          <option value="36" data-t="sizeLarge">Large</option>
+        </select>
+      </details>
       <p id="view-status" role="status" hidden></p>
     </div>
+    <button id="panel-toggle" type="button" aria-controls="panel" aria-expanded="true" hidden>Hide panel</button>
     <div id="notice" class="notice" role="status" hidden></div>
     <section id="live-guidance" class="live-guidance" aria-label="Live guidance" data-label="live" hidden>
-      <div id="live-message" role="status" aria-live="polite"></div>
-      <p id="live-distance" class="subtle"></p>
+      <div class="live-instruction">
+        <span id="live-arrow" class="live-arrow" aria-hidden="true"></span>
+        <div><div id="live-message" role="status" aria-live="polite"></div>
+          <p id="live-distance" class="subtle"></p></div>
+      </div>
       <div class="live-actions">
         <button id="live-recenter" type="button" data-t="recenter">Recenter</button>
         <button id="live-voice" type="button" aria-pressed="false" data-t="voice">Voice</button>

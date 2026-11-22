@@ -1,7 +1,7 @@
 import {openScene} from './scene3d.js';
 import {markerKey,pinImage} from './pins.js';
 import {profiles,districts,neighbourhoods,locales} from './settings.js';
-import {buildItinerary,distanceBetween,updateGuidance} from './navigation.js';
+import {buildItinerary,distanceBetween,guidanceGlyph,navigationFrame,updateGuidance} from './navigation.js';
 
 const $=id=>document.getElementById(id);
 const kinds=['groceries','dining','health','parks','education','toilets','benches','mtr'];
@@ -34,13 +34,21 @@ let plannerDistrict=districts.findIndex(d=>Math.hypot(d[4]-origin[0],d[5]-origin
 let originName='';
 let current=null,destination=null,route=null,routeStatus='',notice='',request=0,routeRequest=0,timer,shareTimer;
 let indexPromise,addressAbort,searchNumber=0;
+const mobilityProfile=()=>mode==='public'&&['limited','wheelchair'].includes(profile);
 const gentleDefault=id=>['older','limited','wheelchair'].includes(id);
 const legacyGrade=Number(params.get('slope'));
 let gentle=params.has('terrain')?params.get('terrain')==='gentle':
   legacyGrade>0?legacyGrade<=8:params.has('slope')?false:gentleDefault(profile);
 let guide=null, guideFeedback='', itinerary=null;
 let scene=null, scenePromise=null, want3d=false, viewing3d=false, fromScene=false, viewError='';
-let visiblePins=[];
+let visiblePins=[],panelOpen=true,turnMarker=null;
+const markerSizes=[22,28,36];
+let markerSize=22;
+try{
+  const saved=Number(localStorage.getItem('hk-marker-size'));
+  if(markerSizes.includes(saved))markerSize=saved;
+}catch{ /* The size still applies to this session. */ }
+$('pin-size').value=String(markerSize);
 const sceneAngles={pitch:numeric('pitch',48,0,65),bearing:numeric('bearing',0,-180,180)};
 const placeLimits=new Map();
 $('stairs').checked=params.has('stairs')?params.get('stairs')==='1':profiles[profile][3];
@@ -98,21 +106,24 @@ function findPreset(){
   return neighbourhoods.findIndex(p=>Math.hypot(p[2]-origin[0],p[3]-origin[1])<.000003);
 }
 function profileSettings(){
-  return {pace:profiles[profile][2],stairs:$('stairs').checked||profile==='wheelchair',
-    hills:$('hills').checked,slope:mode==='planner'?Number($('slope').value):gentle?5:0,wheelchair:profile==='wheelchair'};
+  const mobility=mobilityProfile();
+  const slope=mode==='planner'?Number($('slope').value):gentle||profile==='wheelchair'?5:mobility?8:0;
+  return {pace:profiles[profile][2],stairs:$('stairs').checked||profile==='wheelchair'||mobility,
+    hills:$('hills').checked,slope,wheelchair:profile==='wheelchair'||mobility,mobility};
 }
 function syncURL(){
   if(!mode) return;
   const c=guide?.view.centre||map.getCenter();
   const hash=new URLSearchParams({mode,view:tab,lang:language,lat:origin[0].toFixed(6),lng:origin[1].toFixed(6),
     y:c.lat.toFixed(6),x:c.lng.toFixed(6),z:Number((guide?.view.zoom??map.getZoom()).toFixed(3)),min:minutes,profile,
-    stairs:Number($('stairs').checked),hills:Number($('hills').checked),slope:profileSettings().slope,terrain:gentle?'gentle':'all',
+    stairs:Number($('stairs').checked),hills:Number($('hills').checked),slope:profileSettings().slope,terrain:gentle||profile==='wheelchair'?'gentle':'all',
     places:[...selected].sort().join(','),access:Number($('accessible').checked),
     barriers:Number($('show-barriers').checked),area:Number($('show-area').checked)});
-  if(viewing3d){
+  if(guide?guide.view.threeD:viewing3d){
+    const angles=guide?.view.angles||sceneAngles;
     hash.set('map','3d');
-    hash.set('pitch',sceneAngles.pitch.toFixed(1));
-    hash.set('bearing',sceneAngles.bearing.toFixed(1));
+    hash.set('pitch',angles.pitch.toFixed(1));
+    hash.set('bearing',angles.bearing.toFixed(1));
   }
   if(destination) hash.set('to',JSON.stringify([destination.coords,destination.kind,destination.name,destination.ref,
     destination.edge??null,destination.position??null,destination.distance??null,destination.access??0]));
@@ -130,6 +141,27 @@ function readDestination(){
   }catch{return null;}
 }
 const mapFrame=$('map').parentElement;
+new ResizeObserver(()=>{
+  map.invalidateSize({pan:false});
+  scene?.resize();
+}).observe(mapFrame);
+
+function renderPanel(){
+  const panel=$('panel'),button=$('panel-toggle');
+  button.hidden=!mode;
+  button.textContent=word[panelOpen?'hidePanel':'showPanel'];
+  button.setAttribute('aria-expanded',String(panelOpen));
+  if(!panelOpen&&panel.contains(document.activeElement))button.focus();
+  panel.hidden=!panelOpen;
+  panel.inert=!mode||!panelOpen;
+  mapFrame.parentElement.classList.toggle('panel-collapsed',!panelOpen);
+}
+
+function pauseFollowing(){
+  if(!guide||!guide.follow)return;
+  guide.follow=false;
+  renderGuide();
+}
 function mapCamera(){
   const centre=map.getCenter();
   return {coords:[centre.lat,centre.lng],zoom:map.getZoom()};
@@ -138,7 +170,7 @@ function renderViewControls(){
   $('view-2d').setAttribute('aria-pressed',String(!viewing3d));
   $('view-3d').setAttribute('aria-pressed',String(viewing3d));
   $('view-3d').disabled=want3d&&!scene;
-  const status=viewError||(want3d&&!scene?'loading3d':viewing3d&&map.getZoom()<14.4?'zoomBuildings':'');
+  const status=viewError||(want3d&&!scene?'loading3d':viewing3d&&!guide&&map.getZoom()<14.4?'zoomBuildings':'');
   $('view-status').hidden=!status;
   $('view-status').textContent=status?word[status]:'';
 }
@@ -154,6 +186,8 @@ function activateView(value){
     scene.setOrigin(origin,word.start,!guide);
     scene.setPosition(guide?.fix?.coords);
     scene.setPlaces(visiblePins);
+    scene.setPinSize(markerSize);
+    scene.setGuiding(!!guide);
   }else{
     scene?.hide();
     map.invalidateSize({pan:false});
@@ -161,6 +195,7 @@ function activateView(value){
   }
   renderLines();
   renderRoute();
+  if(guide?.follow)followPosition(guide);
   renderViewControls();
   syncURL();
 }
@@ -184,7 +219,7 @@ async function chooseMapView(next){
       },
       onOrigin(coords){if(mode&&!guide)changeOrigin(coords,false);},
       onPlace(point){showMapPopup(point.coords,placePopup(point));},
-      onDrag(){if(guide)guide.follow=false;},
+      onDrag:pauseFollowing,
       onUnavailable(){
         if(!scene)return;
         const unavailable=scene;
@@ -228,7 +263,7 @@ function renderTime(){
   $('legend-ticks').replaceChildren(...[0,...times.filter(t=>t<minutes),minutes].map(t=>el('span',String(t))));
 }
 function renderModes(){
-  $('panel').inert=!mode;
+  renderPanel();
   $('panel-title').textContent=word[mode==='planner'?'dashboard':tab];
   $('panel-hint').textContent=word[mode==='planner'?'plannerHint':tab==='directions'?'directionsHint':'publicHint'];
   $('switch-mode').hidden=$('share').hidden=!mode;
@@ -252,9 +287,13 @@ function renderModes(){
   $('place').value=mode==='planner'?plannerDistrict:findPreset();
 }
 function renderTerrain(){
-  $('terrain-gentle').setAttribute('aria-pressed',String(gentle));
-  $('terrain-all').setAttribute('aria-pressed',String(!gentle));
-  $('terrain-note').textContent=word[gentle?'gentleNote':'allHillsNote'];
+  const chair=profile==='wheelchair';
+  $('terrain-gentle').setAttribute('aria-pressed',String(gentle||chair));
+  $('terrain-all').setAttribute('aria-pressed',String(!gentle&&!chair));
+  $('terrain-all').disabled=chair;
+  $('terrain-note').textContent=word[chair?'chairSlope':gentle?'gentleNote':mobilityProfile()?'limitedSlope':'allHillsNote'];
+  $('stairs').disabled=chair||mobilityProfile();
+  if($('stairs').disabled)$('stairs').checked=true;
 }
 function localize(){
   word=locales[language];
@@ -268,8 +307,7 @@ function localize(){
   }
   $('profile').replaceChildren(...Object.entries(profiles).map(([id,p])=>new Option(p[langIndex()],id)));
   $('profile').value=profile;
-  $('profile-note').textContent=profiles[profile][2].toFixed(2)+(language==='zh'?' 米／秒（參考值）':' m/s reference pace');
-  $('stairs').disabled=profile==='wheelchair';
+  $('profile-note').textContent=profiles[profile][2].toFixed(2)+(language==='zh'?' 米／秒（參考值）':' m/s reference pace')+(mobilityProfile()?' · '+word.stepFreeProfile:'');
   pin.getElement().setAttribute('aria-label',word.start);
   scene?.setOrigin(origin,word.start,!guide);
   renderViewControls();
@@ -579,9 +617,9 @@ function render2DPins(){
     }
     const [point]=points, label=placeTitle(point);
     const brand=!markerKey(point).startsWith('category-');
-    const w=brand?41:30;
+    const w=markerSize;
     const icon=L.divIcon({className:brand?'place-marker brand-marker':'place-marker',
-      html:pinImage(point),iconSize:[w,28],iconAnchor:[w/2,14],popupAnchor:[0,-13]});
+      html:pinImage(point),iconSize:[w,w],iconAnchor:[w/2,w/2],popupAnchor:[0,-w/2]});
     L.marker(point.coords,{icon,title:label}).bindPopup(()=>placePopup(point)).addTo(markers)
       .getElement()?.setAttribute('aria-label',label);
   }
@@ -632,7 +670,7 @@ function clearDestination(){
 function guideText(state){
   if(state.phase!=='following')return word[state.phase];
   const cue=itinerary?.cues[state.progress.cueIndex];
-  if(!cue)return word.follow;
+  if(!cue||cue.at-(state.progress.progress||0)>100)return word.follow;
   const delta=cue.at-(state.progress.progress||0);
   const command=word[cue.kind];
   if(delta<=9)return word.nowAction.replace('{action}',command);
@@ -641,8 +679,26 @@ function guideText(state){
   return word.inDistance.replace('{distance}',distance).replace('{action}',action);
 }
 
+function renderTurn(state){
+  const cue=state?.phase==='following'?itinerary?.cues[state.progress.cueIndex]:null;
+  const upcoming=cue&&cue.at-state.progress.progress<=85?cue:null;
+  const glyph=guidanceGlyph(upcoming?.kind);
+  $('live-arrow').textContent=glyph;
+  scene?.setTurn(viewing3d&&upcoming?{coords:upcoming.coords,glyph}:null);
+  if(viewing3d||!upcoming){
+    turnMarker?.remove();
+    turnMarker=null;
+    return;
+  }
+  const icon=L.divIcon({className:'turn-pin',html:glyph,iconSize:[30,30],iconAnchor:[15,15]});
+  if(!turnMarker)turnMarker=L.marker(upcoming.coords,{icon,interactive:false,keyboard:false,zIndexOffset:1200}).addTo(map);
+  else turnMarker.setLatLng(upcoming.coords).setIcon(icon);
+}
+
 function renderGuide(){
   const state=guide;
+  mapFrame.dataset.guiding=String(!!state);
+  renderTurn(state);
   $('live-guidance').hidden=!state;
   $('start-guide').hidden=!route||!!state||mode!=='public'||tab!=='directions';
   $('guide-feedback').textContent=guideFeedback?word[guideFeedback]:'';
@@ -682,6 +738,7 @@ function stopGuide(message=''){
   if(state.watch!==undefined)navigator.geolocation.clearWatch(state.watch);
   state.marker?.remove();
   scene?.setPosition(null);
+  scene?.setGuiding(false);
   scene?.setOrigin(origin,word.start,true);
   pin.dragging.enable();
   state.screenLock?.release().catch(()=>{});
@@ -691,8 +748,14 @@ function stopGuide(message=''){
   }
   if(state.voice&&'speechSynthesis' in window)speechSynthesis.cancel();
   guideFeedback=message;
-  if(state.followed)map.setView(state.view.centre,state.view.zoom,{animate:false});
+  panelOpen=state.view.panelOpen;
+  renderPanel();
+  Object.assign(sceneAngles,state.view.angles);
+  map.setView(state.view.centre,state.view.zoom,{animate:false});
+  if(viewing3d!==state.view.threeD||want3d!==state.view.threeD)chooseMapView(state.view.threeD);
+  else if(viewing3d)scene.setView({...mapCamera(),...sceneAngles});
   renderGuide();
+  syncURL();
 }
 
 function rerouteGuide(state){
@@ -705,11 +768,15 @@ function rerouteGuide(state){
 }
 
 function followPosition(state){
-  if(!state.fix)return;
-  const first=!state.followed;
-  state.followed=true;
-  if(first)map.setView(state.fix.coords,Math.max(16,map.getZoom()),{animate:false});
-  else map.panTo(state.fix.coords,{animate:false});
+  const coords=state.fix?.coords||itinerary?.segments[0]?.a;
+  if(!coords)return;
+  const frame=itinerary?navigationFrame(itinerary,state.progress.progress):null;
+  if(frame&&state.phase!=='offRoute')state.bearing=frame.bearing;
+  if(viewing3d){
+    scene.follow(coords,state.bearing??sceneAngles.bearing);
+  }else if(!state.followed2d)map.setView(coords,Math.max(17,map.getZoom()),{animate:false});
+  else map.panTo(coords,{animate:false});
+  state.followed2d=!viewing3d;
 }
 
 function onGuideFix(state,fix){
@@ -723,9 +790,11 @@ function onGuideFix(state,fix){
       interactive:false,keyboard:false}).addTo(map);
     state.marker.setLatLng(fix.coords);
     if(viewing3d)scene.setPosition(fix.coords);
-    if(state.follow)followPosition(state);
   }
-  if(state.reroute)return;
+  if(state.reroute){
+    if(state.follow&&fix.accuracy<=65)followPosition(state);
+    return;
+  }
   if(!itinerary){
     if(fix.accuracy<=38 && Date.now()-state.lastReroute>=12000)rerouteGuide(state);
     return;
@@ -749,6 +818,7 @@ function onGuideFix(state,fix){
       break;
     default:state.phase='following';
   }
+  if(state.follow&&fix.accuracy<=65)followPosition(state);
   renderGuide();
   if(state.voice&&!document.hidden&&state.phase==='following'){
     const index=state.progress.cueIndex, cue=itinerary.cues[index];
@@ -765,14 +835,17 @@ function startGuide(){
   if(!navigator.geolocation||!window.isSecureContext){
     guideFeedback='gpsUnavailable';renderGuide();return;
   }
-  const state={phase:'usingGps',progress:{},view:{centre:map.getCenter(),zoom:map.getZoom()},
-    voice:false,follow:true,followed:false,lastReroute:-Infinity,spoken:''};
+  const state={phase:'usingGps',progress:{},view:{centre:map.getCenter(),zoom:map.getZoom(),
+    threeD:want3d,panelOpen,angles:{...sceneAngles}},voice:false,follow:true,lastReroute:-Infinity,spoken:''};
   guide=state;
+  panelOpen=false;
+  renderPanel();
   pin.dragging.disable();
   scene?.setOrigin(origin,word.start,false);
   guideFeedback='';
   renderGuide();
-  if(matchMedia('(max-width: 700px)').matches)$('map').scrollIntoView({block:'start'});
+  chooseMapView(true);
+  if(!viewing3d)followPosition(state);
   try{
     state.watch=navigator.geolocation.watchPosition(position=>{
       const {latitude,longitude,accuracy}=position.coords;
@@ -815,13 +888,18 @@ function renderRoute(){
   details.append(summary,el('p',[word.walkWhy,settings.stairs?word.stepWhy:'',settings.wheelchair?word.chairWhy:'',
     settings.slope?word.gentleWhy:'',word.unmapped].filter(Boolean).join(' '),'subtle'));
   $('route-info').append(el('h3',timeLabel(route.seconds/60)+' · '+metresLabel(route.metres)),
+    el('p',word[settings.stairs?'stepFreeMapped':'fastestMapped'],'subtle'),
     ...(flagText(destination)?[el('p',flagText(destination),'subtle')]:[]),details);
+  if(settings.stairs){
+    const lift=route.legs.some(leg=>leg[3]>.1&&(leg[2]&32));
+    $('route-info').append(el('p',lift?word.verifyLift+' '+word.verifyAccess:word.verifyAccess,'route-access-note'));
+  }
   const cues=itinerary?.cues||[];
   $('route-steps').replaceChildren(...cues.map((cue,i)=>{
     const line=el('li'), distance=(cues[i+1]?.at??cue.at)-cue.at;
     const label=word[cue.kind]+(distance>12&&cue.kind!=='lift'?' · '+metresLabel(distance):'');
     line.append(createButton(label,()=>{
-      if(guide)guide.follow=false;
+      pauseFollowing();
       map.setView(cue.coords,Math.max(17,map.getZoom()));
       showMapPopup(cue.coords,el('span',label));
       if(matchMedia('(max-width: 700px)').matches)$('map').scrollIntoView({block:'start'});
@@ -1025,7 +1103,7 @@ $('live-voice').addEventListener('click',()=>{
   renderGuide();
 });
 document.addEventListener('visibilitychange',()=>{if(guide&&!document.hidden)keepScreenOn(guide);});
-map.on('dragstart',()=>{if(guide)guide.follow=false;});
+map.on('dragstart',pauseFollowing);
 for(const id of ['stairs','hills','slope'])$(id).addEventListener('change',run);
 $('place').addEventListener('change',()=>{
   const i=Number($('place').value), planner=mode==='planner';
@@ -1045,6 +1123,17 @@ map.on('moveend',()=>{
   syncURL();
 });
 map.on('zoomend',render2DPins);
+$('panel-toggle').addEventListener('click',()=>{
+  panelOpen=!panelOpen;
+  if(guide)guide.view.panelOpen=panelOpen;
+  renderPanel();
+});
+$('pin-size').addEventListener('change',()=>{
+  markerSize=Number($('pin-size').value);
+  try{localStorage.setItem('hk-marker-size',String(markerSize));}catch{ /* Optional preference. */ }
+  render2DPins();
+  scene?.setPinSize(markerSize);
+});
 $('view-2d').addEventListener('click',()=>chooseMapView(false));
 $('view-3d').addEventListener('click',()=>chooseMapView(true));
 pin.on('dragend',()=>{const p=pin.getLatLng();changeOrigin([p.lat,p.lng],false);});

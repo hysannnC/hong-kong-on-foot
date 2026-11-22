@@ -83,18 +83,17 @@ export function createPinSprites(map){
       try{
         await img.decode();
         if(!active)return false;
-        const logo=!key.startsWith('category-');
-        const width=logo?82:60, height=56;
+        const size=64;
         const canvas=document.createElement('canvas');
-        canvas.width=width;canvas.height=height;
+        canvas.width=canvas.height=size;
         const context=canvas.getContext('2d');
         context.fillStyle='white';context.strokeStyle='#a4b8ad';context.lineWidth=2;
-        context.beginPath();context.roundRect(2,2,width-4,height-4,13);
+        context.beginPath();context.arc(size/2,size/2,size/2-2,0,Math.PI*2);
         context.fill();context.stroke();
-        const ratio=Math.min((width-14)/img.naturalWidth,42/img.naturalHeight);
+        const ratio=Math.min(48/img.naturalWidth,45/img.naturalHeight);
         const w=img.naturalWidth*ratio,h=img.naturalHeight*ratio;
-        context.drawImage(img,(width-w)/2,(height-h)/2,w,h);
-        map.addImage(key,context.getImageData(0,0,width,height),{pixelRatio:2});
+        context.drawImage(img,(size-w)/2,(size-h)/2,w,h);
+        map.addImage(key,context.getImageData(0,0,size,size),{pixelRatio:2});
         return true;
       }catch{
         return false;

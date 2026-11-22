@@ -1,4 +1,4 @@
-const CACHE='hk-on-foot-shell-v6';
+const CACHE='hk-on-foot-shell-v7';
 const SHELL=['./','app.js','settings.js','reach.js','navigation.js','scene3d.js','pins.js','brands/schools.js','style.css','manifest.webmanifest',
   'vendor/leaflet.js','vendor/leaflet.css','vendor/maplibre-gl.js','vendor/maplibre-gl.css',
   'vendor/maplibre-leaflet.js','vendor/proj4.js','icons/icon-192.png','icons/icon-512.png'];
