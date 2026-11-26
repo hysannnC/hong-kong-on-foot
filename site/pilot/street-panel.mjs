@@ -1,14 +1,15 @@
-import {observationMarkers} from './evidence-markers.mjs?v=53';
-import {evidenceDetails,evidenceTitle} from './evidence-details.mjs?v=53';
-import {demoTrips,demoTripById,drawDemoTrip,movementColors} from './demo-trips.mjs?v=53';
-import {downloadJSON} from './data-downloads.mjs?v=53';
-import {marketRoutePanel} from './market-routing.mjs?v=53';
-import {exampleRouteDistances,observationLabel,tripMapURL,tripPaths} from './trip-journey.mjs?v=53';
-import {drawTripComparison,fitTripComparison} from './trip-map.mjs?v=53';
-import {exampleTripReview,summarizeTrips,tripCharts} from './trip-analysis.mjs?v=53';
-import {mountCentralStudy} from './central-study.mjs?v=53';
-import {behaviorSummary,streets} from './street-model.mjs?v=53';
-import {mergeTrips,studyState} from './street-store.mjs?v=53';
+import {observationMarkers} from './evidence-markers.mjs?v=54';
+import {evidenceDetails,evidenceTitle} from './evidence-details.mjs?v=54';
+import {demoTrips,demoTripById,drawDemoTrip,movementColors} from './demo-trips.mjs?v=54';
+import {downloadJSON} from './data-downloads.mjs?v=54';
+import {marketRoutePanel} from './market-routing.mjs?v=54';
+import {exampleRouteDistances,observationLabel,tripMapURL,tripPaths} from './trip-journey.mjs?v=54';
+import {drawTripComparison,fitTripComparison} from './trip-map.mjs?v=54';
+import {exampleTripReview,summarizeTrips,tripCharts} from './trip-analysis.mjs?v=54';
+import {mountCentralStudy} from './central-study.mjs?v=54';
+import {behaviorSummary,streets} from './street-model.mjs?v=54';
+import {mergeTrips,studyState} from './street-store.mjs?v=54';
+import {publishedTrips} from './published-trips.mjs?v=54';
 
 export function mountStreetPanel(root,map,tripRoot,completedTrip) {
   const layer=L.layerGroup().addTo(map);
@@ -251,6 +252,9 @@ export function mountStreetPanel(root,map,tripRoot,completedTrip) {
     exportTrips.disabled=!selected.length;
     const exports=el('section',[
       el('h3',t('Trip data','行程資料')),exportTrips,
+      link(t('Download all 13 published trips (JSON)','下載全部 13 個已發布行程（JSON）'),'./pilot/published-trip-records.json'),
+      el('p',t(publishedTrips.length+' published demonstration trips are available to every visitor. New trips saved on this device remain local until exported and published.',
+        publishedTrips.length+' 個已發布示範行程可供所有訪客查看。此裝置新儲存的行程會保留在本機，直至匯出並發布。'),'subtle'),
       el('p',t('Download the records behind these charts, including sensor counts, cues and available event times. The app retains only summaries of phone trips.',
         '下載圖表所用的紀錄，包括感測次數、線索及可用的事件時間。程式僅保留手機行程摘要。'),'subtle'),
       transfer(trips),

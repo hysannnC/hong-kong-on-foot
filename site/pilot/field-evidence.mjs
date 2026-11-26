@@ -1,7 +1,7 @@
 import {distanceBetween} from '../navigation.js';
-import {centralCases} from './central-camera.mjs?v=53';
+import {centralCases} from './central-camera.mjs?v=54';
 import {approach,exampleDetour,exampleRamp} from './bridge-geography.mjs';
-import {replayEvents,tripPaths} from './trip-journey.mjs?v=53';
+import {replayEvents,tripPaths} from './trip-journey.mjs?v=54';
 
 const key='hk-on-foot.field-observations.v1';
 const types=['flow','facility','water','crossing','blockage'];

@@ -1,4 +1,5 @@
 import {streets} from './street-model.mjs';
+import {publishedTrips} from './published-trips.mjs?v=54';
 
 const key='hk-on-foot.street-studies.v1';
 export const reports=['sign','barrier','personal','unsure'];
@@ -6,8 +7,10 @@ function read(){
   try{
     const saved=JSON.parse(localStorage.getItem(key)||'{}');
     const list=Array.isArray(saved.trips)?saved.trips:[];
-    return {trips:list.filter(validTrip)};
-  }catch{return {trips:[]};}
+    const trips=new Map(publishedTrips.filter(validTrip).map(row=>[row.id,row]));
+    for(const row of list.filter(validTrip))trips.set(row.id,row);
+    return {trips:[...trips.values()]};
+  }catch{return {trips:publishedTrips.filter(validTrip)};}
 }
 export const studyState=read;
 const metric=(n,max)=>Number.isInteger(n)&&n>=0&&n<=max;

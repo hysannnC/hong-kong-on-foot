@@ -1,11 +1,11 @@
-import {downloadCSV} from './data-downloads.mjs?v=53';
-import {marketRoutePanel} from './market-routing.mjs?v=53';
-import {evidenceLegend,observationMarkers} from './evidence-markers.mjs?v=53';
-import {drawRouteLines} from './trip-map.mjs?v=53';
-import {evidenceDate,evidenceNames,evidenceTime,fieldEvidence,routeComparison} from './field-evidence.mjs?v=53';
+import {downloadCSV} from './data-downloads.mjs?v=54';
+import {marketRoutePanel} from './market-routing.mjs?v=54';
+import {evidenceLegend,observationMarkers} from './evidence-markers.mjs?v=54';
+import {drawRouteLines} from './trip-map.mjs?v=54';
+import {evidenceDate,evidenceNames,evidenceTime,fieldEvidence,routeComparison} from './field-evidence.mjs?v=54';
 import {distanceBetween} from '../navigation.js';
 
-export const evidenceLink=(lang,scenario='market')=>'./?shell=53&fieldLoop=1&routeCase='+scenario+'#mode=public&view=directions&lang='+lang;
+export const evidenceLink=(lang,scenario='market')=>'./?shell=54&fieldLoop=1&routeCase='+scenario+'#mode=public&view=directions&lang='+lang;
 const el=(tag,...children)=>{const node=document.createElement(tag);node.append(...children);return node;};
 const cls=(tag,name,...children)=>{const node=el(tag,...children);node.className=name;return node;};
 const link=(title,url)=>{const node=el('a',title);node.href=url;return node;};
@@ -71,8 +71,8 @@ export function routeFeedbackPanel({root,map,layer,lang}){
   const controls=cls('div','study-options',
     button(local('Fit routes','顯示路線'),()=>map.fitBounds(extent,{padding:[26,36],maxZoom:18,animate:false})),
     link(local('Central Market example','中環街市示例'),evidenceLink(lang,'market')),
-    link(local('Open Street Study','開啟街道研究'),'./?shell=53#mode=planner&view=street&lang='+lang),
-    link(local('Back to Directions','返回路線指引'),'./?shell=53#mode=public&view=directions&lang='+lang));
+    link(local('Open Street Study','開啟街道研究'),'./?shell=54#mode=planner&view=street&lang='+lang),
+    link(local('Back to Directions','返回路線指引'),'./?shell=54#mode=public&view=directions&lang='+lang));
   root.replaceChildren(el('h2',local('Routes with street observations','結合街道觀察的路線')),
     cls('p','subtle',local('Central → Star Ferry Pier 7 · 17:00 replay scenario','中環 → 天星小輪七號碼頭 · 17:00 重播情境')),
     key,
