@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#10221f"><title>Inside the IFC footbridge · Hong Kong on Foot</title><link rel="stylesheet" href="bridge.css?v=53"><script type="module" src="bridge.mjs?v=53"></script></head>
+<body>
+<header><a href="./">Hong Kong on Foot</a><button id="language">繁體中文</button></header>
+<main>
+<section class="intro"><h1 id="title"></h1><p id="subtitle"></p></section>
+<div class="trip-setup"><label class="trip-consent"><input id="field-consent" type="checkbox"> <span id="field-consent-label"></span></label>
+<div class="controls"><button id="field-start" type="button"></button><button id="field-stop" type="button" hidden></button></div>
+<p id="journey-status" role="status"></p></div>
+<div class="layout">
+<section class="player" id="player" aria-label="3D footbridge walkthrough">
+<canvas id="view"></canvas><video id="field-video" playsinline autoplay muted hidden></video><canvas id="field-boxes" hidden aria-hidden="true"></canvas><span id="field-camera-label" hidden></span><div id="field-direction" hidden></div><p id="guidance" class="sr-only" aria-live="polite"></p>
+</section>
+</div>
+<div class="controls" id="replay-controls"><button id="play" class="primary"></button><button id="restart"></button><button id="full"></button><button id="record"></button><button id="openMap" class="primary" type="button" hidden></button><a id="download" hidden></a><span id="exportStatus" role="status"></span></div>
+<label class="timeline" for="seek"><span id="time"></span><input type="range" id="seek" min="0" max="29" step=".05" value="0"></label>
+<section id="field-study" class="field-study" aria-labelledby="field-title">
+<h2 id="field-title"></h2><p id="field-privacy"></p>
+<p id="field-status" role="status"></p><dl id="field-readings"></dl>
+<p id="field-conditions"></p>
+<div class="controls"><button id="field-central-replay" type="button"></button></div>
+<section id="field-central-captures" hidden aria-live="polite"></section>
+</section><p id="method"></p>
+</main></body></html>

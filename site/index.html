@@ -11,12 +11,12 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=53">
 <script defer src="vendor/leaflet.js"></script>
 <script defer src="vendor/maplibre-gl.js"></script>
 <script defer src="vendor/maplibre-leaflet.js"></script>
 <script defer src="vendor/proj4.js"></script>
-<script type="module" src="app.js"></script>
+<script type="module" src="app.js?v=53"></script>
 </head>
 <body>
 <header class="top">
@@ -31,6 +31,7 @@
   <section class="map-frame" aria-label="Interactive map" data-label="mapLabel">
     <div id="map"></div>
     <div id="map-3d" aria-hidden="true"></div>
+    <div id="embedded-ar" hidden></div>
     <div class="view-control">
       <div class="view-toggle" role="group" data-label="mapView" aria-label="Map view">
         <button id="view-2d" type="button" aria-pressed="true" data-t="view2d">2D</button>
@@ -50,11 +51,8 @@
     <button id="panel-toggle" type="button" aria-controls="panel" aria-expanded="true" hidden>Hide panel</button>
     <div id="notice" class="notice" role="status" hidden></div>
     <section id="live-guidance" class="live-guidance" aria-label="Live guidance" data-label="live" hidden>
-      <div class="live-instruction">
-        <span id="live-arrow" class="live-arrow" aria-hidden="true"></span>
-        <div><div id="live-message" role="status" aria-live="polite"></div>
-          <p id="live-distance" class="subtle"></p></div>
-      </div>
+      <div id="live-message" role="status" aria-live="polite"></div>
+      <p id="live-distance" class="subtle"></p>
       <div class="live-actions">
         <button id="live-recenter" type="button" data-t="recenter">Recenter</button>
         <button id="live-voice" type="button" aria-pressed="false" data-t="voice">Voice</button>
@@ -69,6 +67,7 @@
     </div>
   </section>
   <aside id="panel" class="panel" data-label="settings" aria-label="Walking settings" inert>
+    <section id="bridge-review" hidden></section>
     <div class="panel-heading">
       <h1 id="panel-title"></h1>
       <p class="muted" id="panel-hint"></p>
@@ -76,7 +75,25 @@
     <div id="public-tabs" class="tabs">
       <button id="explore-tab" data-t="explore" aria-pressed="true">Explore</button>
       <button id="directions-tab" data-t="directions" aria-pressed="false">Directions</button>
+      <button id="ar-tab" type="button" aria-pressed="false">AR walk</button>
     </div>
+    <div id="planner-tabs" class="tabs" hidden>
+      <button id="access-tab" type="button" aria-pressed="true">Accessibility</button>
+      <button id="street-tab" type="button" aria-pressed="false">Street study</button>
+    </div>
+    <section id="loop-routes" class="section" hidden></section>
+    <section id="trip-summary" class="section trip-summary" hidden></section>
+    <div id="accessibility-views" class="study-options" hidden>
+      <button id="coverage-tab" type="button"></button>
+      <button id="trip-tab" type="button"></button>
+    </div>
+    <section id="accessibility-trips" class="section" hidden></section>
+    <section id="ar-panel" class="section" hidden>
+      <p id="ar-description"></p>
+      <a href="pilot/bridge.html" id="ar-standalone"></a>
+      <button id="show-ar" type="button" class="accent"></button>
+    </section>
+    <section id="street-panel" class="section" hidden></section>
     <section class="section origin">
       <label for="place" id="origin-label"></label>
       <div class="inline"><select id="place"></select><button id="locate" data-t="locate">Locate me</button></div>
@@ -131,6 +148,8 @@
       <div id="route-info" role="status" aria-live="polite"></div>
       <button id="start-guide" class="accent" type="button" data-t="startGuide" hidden>Start live guidance</button>
       <p id="guide-feedback" class="subtle" role="status"></p>
+      <a id="route-feedback" href="./?fieldLoop=1#mode=public&amp;view=directions"></a>
+      <button id="route-ar" type="button" hidden></button>
       <ol id="route-steps" class="steps"></ol>
     </section>
     <section id="planner-panel" class="section" hidden>
@@ -149,7 +168,7 @@
       </details>
       <h3 data-t="audit">Field-audit priorities</h3>
       <ul id="findings" class="findings"></ul>
-      <div class="exports"><button id="csv" data-t="csv">CSV</button><button id="geo" data-t="geo">GeoJSON</button><button id="print" data-t="pdf">Print / PDF</button></div>
+      <div class="exports"><button id="coverage-data" data-t="coverageData">Coverage records (JSON)</button><button id="csv" data-t="csv">CSV</button><button id="geo" data-t="geo">GeoJSON</button><button id="print" data-t="pdf">Print / PDF</button></div>
     </section>
     <details class="section sources">
       <summary data-t="methods">Data, method and walking speeds</summary>

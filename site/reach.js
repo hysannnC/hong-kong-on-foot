@@ -5,8 +5,6 @@ const LNG_METRES = .103;
 const STAIRS = 1;
 const FORWARD_ONLY = 2;
 const REVERSE_ONLY = 4;
-const WHEELCHAIR_BARRIER = 16;
-const LIFT = 32;
 let manifest;
 const tileCache = new Map();
 
@@ -126,7 +124,7 @@ function canUse(edge,profile) {
 }
 
 function selectOriginAnchor(candidates,graph,profile) {
-  if (!profile.stairs && !profile.slope && !profile.wheelchair) return selectAnchor(candidates,graph);
+  if (!profile.stairs && !profile.slope && !profile.wheelchair && !profile.replayImpacts) return selectAnchor(candidates,graph);
   if (!candidates.length) return undefined;
   // Keep the connection local to the pin. A distant flatter route does not
   // establish that the person can get there from the selected starting point.
@@ -140,10 +138,10 @@ function edgeCost(e,reverse,profile) {
   const flags = e[9];
   if ((reverse ? flags & FORWARD_ONLY : flags & REVERSE_ONLY) ||
       (profile.stairs && (flags & STAIRS)) ||
-      (profile.wheelchair && (flags & WHEELCHAIR_BARRIER)) ||
-      (profile.slope && !(flags & LIFT) && Math.abs(grade) * 100 > profile.slope)) return Infinity;
-  const factor = profile.hills && !(flags & LIFT) ? Math.exp(-3.5 * (Math.abs(grade + .05) - .05)) : 1;
-  return e[7] / (factor * profile.pace);
+      (profile.wheelchair && (flags & 16)) ||
+      (profile.slope && Math.abs(grade) * 100 > profile.slope)) return Infinity;
+  const factor = profile.hills ? Math.exp(-3.5 * (Math.abs(grade + .05) - .05)) : 1;
+  return e[7] / (factor * profile.pace)+(profile.replayImpacts?.[e[0]]??0);
 }
 
 function walk(graph,anchor,profile,budget,goal) {
@@ -285,7 +283,7 @@ function summaries(tiles,journey,budget,includePlaces) {
 function barriersNear(edges,baseline,profile,budget) {
   const blocked = new Map();
   for(const edge of edges.values()){
-    const stair = edge[9]&STAIRS, restricted = edge[9]&WHEELCHAIR_BARRIER, steep = Math.abs(edge[8])*100>(profile.slope||8);
+    const stair = edge[9]&STAIRS, restricted = edge[9]&16, steep = Math.abs(edge[8])*100>(profile.slope||8);
     if(!stair&&!restricted&&!steep) continue;
     const seconds = Math.min(...approaches(edge,baseline).map(a=>atTime(a,.5)));
     if(seconds>budget) continue;
@@ -332,7 +330,8 @@ function reconstruct(journey,edge,position) {
   options.sort((a,b)=>a.cost-b.cost);
   const end=options[0];
   if(!end) return null;
-  const leg=(e,from,to)=>[point(e,from),point(e,to),e[9],e[7]*Math.abs(to-from),(e[8]||0)*Math.sign(to-from)];
+  const leg=(e,from,to)=>[point(e,from),point(e,to),e[9],e[7]*Math.abs(to-from),(e[8]||0)*Math.sign(to-from),
+    ...(journey.profile.replayImpacts?[e[0]]:[])];
   if(end.node===null) return {seconds:end.cost,legs:[leg(start,startPos,position)]};
   const legs=[leg(edge,end.reverse?1:0,position)];
   let node=end.node, entry=journey.back.get(node);
@@ -346,53 +345,33 @@ function reconstruct(journey,edge,position) {
   return {seconds:end.cost,legs:legs.reverse()};
 }
 
-function destinationAnchors(edges,destination,profile) {
-  const [lat,lng]=destination.coords.map(value=>value*SCALE);
-  const edge=edges.get(destination.edge);
-  const limit=profile.mobility?32:110;
-  if(edge&&Number.isFinite(destination.position)){
-    const [,offset]=project(lat,lng,edge);
-    if(offset<=limit){
-      if(profile.mobility&&!canUse(edge,profile))return [];
-      return [[edge,destination.position,offset]];
+async function findRoute(index,data) {
+  const [lat,lng]=data.destination.coords;
+  const direct=Math.hypot((lat-data.origin[0])*111200,(lng-data.origin[1])*103000);
+  if(direct>8500) return {routeError:'routeFar'};
+  for(const padding of [650,1500]){
+    const {graph,edges,candidates}=await getNetwork(index,data.origin,[lat,lng],padding);
+    const anchor=selectOriginAnchor(candidates,graph,data);
+    if(!anchor) return {routeError:candidates.length?'noReach':'noPath'};
+    let target=edges.get(data.destination.edge), position=data.destination.position, offset=data.destination.distance;
+    if(target && project(lat*SCALE,lng*SCALE,target)[1]>110)target=null;
+    if(target && !canUse(target,data) && position>0 && position<1) return {routeError:'noRoute'};
+    if(!target){
+      const targets=[];
+      for(const edge of edges.values()){
+        const [t,d]=project(lat*SCALE,lng*SCALE,edge);
+        if(d<=45 && canUse(edge,data)) targets.push([edge,t,d]);
+      }
+      const picked=selectAnchor(targets,graph);
+      if(!picked) return {routeError:'noRoute'};
+      [target,position,offset]=picked;
     }
-    if(profile.mobility)return [];
+    const budget=Math.min(21600,direct/data.pace*3+1500);
+    const solution=reconstruct(walk(graph,anchor,data,budget,target),target,position);
+    if(solution) return {route:{...solution,seconds:solution.seconds+offset/data.pace,offset,
+      metres:solution.legs.reduce((n,leg)=>n+leg[3],0)+anchor[2]+offset}};
   }
-  const nearby=[];
-  for(const segment of edges.values()){
-    const [position,offset]=project(lat,lng,segment);
-    if(offset<=(profile.mobility?22:45))nearby.push([segment,position,offset]);
-  }
-  if(!nearby.length)return [];
-  const nearest=Math.min(...nearby.map(candidate=>candidate[2]));
-  const tolerance=profile.mobility?8:16;
-  return nearby.filter(([segment,,offset])=>offset<=nearest+tolerance&&canUse(segment,profile));
-}
-
-async function findRoute(index,profile) {
-  const {origin,destination,pace,stairs,mobility}=profile;
-  const [lat,lng]=destination.coords;
-  const direct=Math.hypot((lat-origin[0])*111200,(lng-origin[1])*103000);
-  if(direct>8500)return {routeError:'routeFar'};
-  if(mobility&&destination.access===3)return {routeError:'blockedAccess'};
-  const {graph,edges,candidates}=await getNetwork(index,origin,[lat,lng],1500);
-  if(!candidates.length)return {routeError:'noPath'};
-  const unavailable={routeError:stairs?'noStepFree':'noRoute'};
-  const anchor=selectOriginAnchor(mobility?candidates.filter(candidate=>candidate[2]<=32):candidates,graph,profile);
-  if(!anchor)return unavailable;
-  const targets=destinationAnchors(edges,destination,profile);
-  if(!targets.length)return unavailable;
-  const budget=Math.min(21600,direct/pace*3+1500);
-  const journey=walk(graph,anchor,profile,budget,true);
-  let route=null;
-  for(const [target,position,offset] of targets){
-    const solution=reconstruct(journey,target,position);
-    if(!solution)continue;
-    const seconds=solution.seconds+offset/pace;
-    if(route&&route.seconds<=seconds)continue;
-    route={...solution,seconds,offset,metres:solution.legs.reduce((n,leg)=>n+leg[3],0)+anchor[2]+offset};
-  }
-  return route?{route}:unavailable;
+  return {routeError:'noRoute'};
 }
 
 self.onmessage=async ({data})=>{

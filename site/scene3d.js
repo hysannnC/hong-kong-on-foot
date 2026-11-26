@@ -1,4 +1,4 @@
-import {createPinSprites,markerKey} from './pins.js';
+import {createPinSprites,markerKey} from './pins.js?v=53';
 
 const collection=features=>({type:'FeatureCollection',features});
 const flip=([lat,lng])=>[lng,lat];
@@ -14,7 +14,7 @@ export async function openScene(container,{view,bounds,labels,onView,onOrigin,on
     attributionControl:{compact:true,customAttribution:'<a href="https://portal.csdi.gov.hk/csdi-webpage/dataset/landsd_rcd_1637222018065_52265">Walking network © LandsD / CSDI</a>'},
     locale:{'NavigationControl.ZoomIn':labels.zoomIn,'NavigationControl.ZoomOut':labels.zoomOut,'NavigationControl.ResetBearing':labels.resetBearing}
   });
-  let visible=false, syncing=false, places=[], popup=null, start=null, end=null, gps=null, turn=null;
+  let visible=false, syncing=false, places=[], popup=null, start=null, end=null, gps=null;
   const sprites=createPinSprites(map);
   try {
     await new Promise((resolve,reject)=>{
@@ -69,7 +69,7 @@ export async function openScene(container,{view,bounds,labels,onView,onOrigin,on
       layout:{'text-field':['get','point_count_abbreviated'],'text-size':12,'text-allow-overlap':true},
       paint:{'text-color':'white'}});
     map.addLayer({id:'hk-places',type:'symbol',source:'hk-places',filter:['!',['has','point_count']],
-      layout:{'icon-size':22/32,'icon-image':['coalesce',['image',['get','icon']],['image',['get','fallback']]],
+      layout:{'icon-image':['coalesce',['image',['get','icon']],['image',['get','fallback']]],
         'icon-allow-overlap':true,'icon-ignore-placement':true,'icon-pitch-alignment':'viewport'}});
     map.addControl(new renderer.NavigationControl({visualizePitch:true}),'top-left');
   } catch(error) {
@@ -101,12 +101,12 @@ export async function openScene(container,{view,bounds,labels,onView,onOrigin,on
       ...(next.pitch==null?{}:{pitch:next.pitch}),...(next.bearing==null?{}:{bearing:next.bearing})});
     syncing=false;
   }
-  map.on('moveend',event=>{
-    if(!visible||syncing||event.guideCamera)return;
+  map.on('moveend',()=>{
+    if(!visible||syncing)return;
     const {lat,lng}=map.getCenter();
     onView({coords:[lat,lng],zoom:map.getZoom()+1,pitch:map.getPitch(),bearing:map.getBearing()});
   });
-  map.on('movestart',event=>{if(event.originalEvent)onDrag();});
+  map.on('dragstart',onDrag);
   map.on('webglcontextlost',onUnavailable);
   const interactive=['hk-places','hk-clusters','hk-barriers'];
   map.on('mousemove',event=>{map.getCanvas().style.cursor=map.queryRenderedFeatures(event.point,{layers:interactive}).length?'pointer':'';});
@@ -135,25 +135,12 @@ export async function openScene(container,{view,bounds,labels,onView,onOrigin,on
   });
 
   return {
+    resize(){map.resize();},
+    setPinSize(size){map.setLayoutProperty('hk-places','icon-size',size/32);},
     show(next){visible=true;map.resize();setView(next);},
     hide(){visible=false;popup?.remove();},
     dispose(){places=[];sprites.dispose();map.remove();},
     setView,showPopup,
-    resize(){map.resize();},
-    setPinSize(size){map.setLayoutProperty('hk-places','icon-size',size/32);},
-    setGuiding(active){map.setLayoutProperty('hk-buildings','visibility',active?'none':'visible');},
-    follow(coords,bearing){
-      const verticalOffset=Math.min(110,map.getCanvas().clientHeight*.18);
-      map.easeTo({center:flip(coords),bearing,pitch:53,zoom:18,duration:500,offset:[0,verticalOffset]},
-        {guideCamera:true});
-    },
-    setTurn(cue){
-      turn=setMarker(turn,cue?.coords,'turn-pin',30);
-      if(turn){
-        turn.getElement().textContent=cue.glyph;
-        turn.getElement().setAttribute('aria-hidden','true');
-      }
-    },
     setOrigin(coords,label,draggable){
       start=setMarker(start,coords,'start-pin',27,{draggable:true});
       start.setDraggable(draggable);

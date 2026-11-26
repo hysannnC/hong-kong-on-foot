@@ -35,7 +35,7 @@ const categories=shapes.map((path,i)=>'data:image/svg+xml,'+encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="'+path+'" fill="none" stroke="'+colors[i]+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'));
 const normalName=name=>(name||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
 const brandsByKind={
-  0:{vango:'vango',vango便利店:'vango',aeon:'aeon',aeonstores:'aeon',永旺:'aeon',永旺百貨:'aeon'},
+  0:{seveneleven:'seven','7eleven':'seven','711':'seven','711便利店':'seven',seven:'seven',circlek:'circle-k',ok便利店:'circle-k',wellcome:'wellcome',惠康:'wellcome',parknshop:'parknshop',百佳:'parknshop',mannings:'mannings',萬寧:'mannings',vango:'vango',vango便利店:'vango',aeon:'aeon',aeonstores:'aeon',永旺:'aeon',永旺百貨:'aeon'},
   1:{mcdonalds:'mcdonalds',麥當勞:'mcdonalds',pizzahut:'pizza-hut',必勝客:'pizza-hut',subway:'subway',
     kfc:'kfc',肯德基:'kfc',pacificcoffee:'pacific-coffee',太平洋咖啡:'pacific-coffee',
     fairwood:'fairwood',大快活:'fairwood',starbucks:'starbucks',starbuckscoffee:'starbucks',星巴克:'starbucks'},
@@ -51,7 +51,7 @@ export function markerKey(point){
     const school=schools[point.coords.map(n=>Math.round(n*1e6)).join('_')];
     if(school)return school;
   }
-  const aliases=brandsByKind[point.kind];
+  const aliases={...brandsByKind[0],...brandsByKind[1],...brandsByKind[point.kind]};
   for(const name of aliases?point.name||[]:[]){
     const alias=normalName(name);
     if(Object.hasOwn(aliases,alias))return aliases[alias];

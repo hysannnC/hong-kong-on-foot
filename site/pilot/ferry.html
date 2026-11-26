@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#132924"><title>Star Ferry AR walkthrough · Hong Kong on Foot</title><link rel="stylesheet" href="ferry.css"><script type="module" src="ferry.mjs"></script></head>
+<body>
+<main>
+  <section id="setup" class="panel">
+    <nav><a id="back" href="./">Hong Kong on Foot</a><button id="language" type="button">繁體中文</button></nav>
+    <p id="eyebrow" class="kicker"></p><h1 id="title"></h1><p id="intro"></p>
+    <img class="poster" src="ferry-media/scene-4.jpg" alt="">
+    <div class="actions"><button id="start" type="button" class="primary"></button><label class="button" for="file" id="choose"></label><input id="file" type="file" accept="video/*"></div>
+    <a id="bridge" class="quiet" href="bridge.html">Open the 3D footbridge demonstration</a><p id="status" role="status"></p>
+    <a class="quiet" href="https://www.youtube.com/watch?v=Vbrn3RM8K2M" target="_blank" rel="noopener" id="sourceVideo"></a>
+  </section>
+  <section id="walk" hidden aria-label="Route playback">
+    <img id="photo" alt=""><video id="video" muted playsinline hidden></video><canvas id="overlay" aria-hidden="true"></canvas>
+    <div class="top"><span id="mode"></span><button id="exit" type="button"></button></div>
+    <div class="hud"><div id="scan"></div><strong id="direction"></strong><div id="sub"></div><progress id="progress" max="1" value="0"></progress></div>
+    <a id="credit" target="_blank" rel="noopener"></a>
+  </section>
+  <section id="report" class="panel" hidden>
+    <p id="done" class="kicker"></p><h1 id="reportTitle" tabindex="-1"></h1><div id="evidence"></div><div id="recommendations"></div><p id="limits"></p><button id="replay" type="button" class="primary"></button>
+  </section>
+</main>
+</body></html>
