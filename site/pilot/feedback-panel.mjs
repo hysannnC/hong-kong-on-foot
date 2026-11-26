@@ -1,11 +1,11 @@
-import {downloadCSV} from './data-downloads.mjs?v=55';
-import {marketRoutePanel} from './market-routing.mjs?v=55';
-import {evidenceLegend,observationMarkers} from './evidence-markers.mjs?v=55';
-import {drawRouteLines} from './trip-map.mjs?v=55';
-import {evidenceDate,evidenceNames,evidenceTime,fieldEvidence,routeComparison} from './field-evidence.mjs?v=55';
+import {downloadCSV,downloadJSON} from './data-downloads.mjs?v=56';
+import {marketRoutePanel} from './market-routing.mjs?v=56';
+import {evidenceLegend,observationMarkers} from './evidence-markers.mjs?v=56';
+import {drawRouteLines} from './trip-map.mjs?v=56';
+import {evidenceDate,evidenceNames,evidenceTime,fieldEvidence,routeComparison} from './field-evidence.mjs?v=56';
 import {distanceBetween} from '../navigation.js';
 
-export const evidenceLink=(lang,scenario='market')=>'./?shell=55&fieldLoop=1&routeCase='+scenario+'#mode=public&view=directions&lang='+lang;
+export const evidenceLink=(lang,scenario='market')=>'./?shell=56&fieldLoop=1&routeCase='+scenario+'#mode=public&view=directions&lang='+lang;
 const el=(tag,...children)=>{const node=document.createElement(tag);node.append(...children);return node;};
 const cls=(tag,name,...children)=>{const node=el(tag,...children);node.className=name;return node;};
 const link=(title,url)=>{const node=el('a',title);node.href=url;return node;};
@@ -28,14 +28,19 @@ export function observationPanel({lang,map,layer,filter='',select}){
     el('td',shortStamp(row),el('br'),evidenceDate(row.at)),el('td',sourceLabels[row.source]),el('td',local(...evidenceNames[row.kind]),
       ...(row.kind==='flow'?[el('br'),local(row.toward+' toward · '+row.away+' away in '+row.observedSeconds+' s',
         row.observedSeconds+' 秒內往向 '+row.toward+' 人次、反向 '+row.away+' 人次')]:[]))))));
-  return [cls('p','subtle',local('Saved observations on this browser. Phone estimates and replay observations retain their source labels.',
-    '此瀏覽器已儲存的觀察。手機估算與重播觀察各自保留來源標籤。')),selector,evidenceLegend(lang),
+  return [cls('p','subtle',local('Published AR and CCTV replay observations load automatically for every visitor, alongside observations saved on this device. Source labels distinguish replay from live phone data.',
+    '已發布的 AR 及閉路電視重播觀察會自動載入，並與此裝置儲存的觀察一同顯示。來源標籤區分重播與即時手機資料。')),selector,
+    cls('p','subtle',local(shown.length+' observations · '+shown.filter(row=>row.source==='ar-replay').length+' AR replay · '+shown.filter(row=>row.source==='cctv-replay').length+' CCTV replay · '+shown.filter(row=>row.source==='phone').length+' live phone',
+      shown.length+' 筆觀察 · '+shown.filter(row=>row.source==='ar-replay').length+' 筆 AR 重播 · '+shown.filter(row=>row.source==='cctv-replay').length+' 筆閉路電視重播 · '+shown.filter(row=>row.source==='phone').length+' 筆即時手機')),
+    evidenceLegend(lang),
     ...(shown.length?[
       button(local('Download filtered observations (CSV)','下載篩選後的觀察（CSV）'),()=>downloadCSV(
         'central-street-observations.csv',
         ['id','source','kind','timestamp_utc','latitude','longitude','count_window_seconds','crossings_toward','crossings_away','scenario','route','clear_width_m'],
         shown.map(row=>[row.id,row.source,row.kind,new Date(row.at).toJSON(),...row.point,
           row.observedSeconds,row.toward,row.away,row.scenario,row.route,row.clearWidthM]))),
+      button(local('Download filtered observations (JSON)','下載篩選後的觀察（JSON）'),()=>downloadJSON(
+        'central-street-observations.json',{version:1,source:filter||'all',record_count:shown.length,records:shown})),
       cls('p','subtle',local('Includes all records for the selected source. The table shows the latest 80.',
         '下載包含所選來源的全部紀錄。表格顯示最新 80 筆。')),
       cls('div','table-scroll',table),button(local('Fit observations','顯示觀察位置'),()=>{
@@ -71,8 +76,8 @@ export function routeFeedbackPanel({root,map,layer,lang}){
   const controls=cls('div','study-options',
     button(local('Fit routes','顯示路線'),()=>map.fitBounds(extent,{padding:[26,36],maxZoom:18,animate:false})),
     link(local('Central Market example','中環街市示例'),evidenceLink(lang,'market')),
-    link(local('Open Street Study','開啟街道研究'),'./?shell=55#mode=planner&view=street&lang='+lang),
-    link(local('Back to Directions','返回路線指引'),'./?shell=55#mode=public&view=directions&lang='+lang));
+    link(local('Open Street Study','開啟街道研究'),'./?shell=56#mode=planner&view=street&lang='+lang),
+    link(local('Back to Directions','返回路線指引'),'./?shell=56#mode=public&view=directions&lang='+lang));
   root.replaceChildren(el('h2',local('Routes with street observations','結合街道觀察的路線')),
     cls('p','subtle',local('Central → Star Ferry Pier 7 · 17:00 replay scenario','中環 → 天星小輪七號碼頭 · 17:00 重播情境')),
     key,

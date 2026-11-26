@@ -1,4 +1,4 @@
-import {createPinSprites,markerKey} from './pins.js?v=55';
+import {createPinSprites,markerKey} from './pins.js?v=56';
 
 const collection=features=>({type:'FeatureCollection',features});
 const flip=([lat,lng])=>[lng,lat];

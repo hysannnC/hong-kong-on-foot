@@ -1,7 +1,8 @@
 import {distanceBetween} from '../navigation.js';
-import {centralCases} from './central-camera.mjs?v=55';
+import {centralCases} from './central-camera.mjs?v=56';
 import {approach,exampleDetour,exampleRamp} from './bridge-geography.mjs';
-import {replayEvents,tripPaths} from './trip-journey.mjs?v=55';
+import {replayEvents,tripPaths} from './trip-journey.mjs?v=56';
+import {publishedObservations} from './published-observations.mjs?v=56';
 
 const key='hk-on-foot.field-observations.v1';
 const types=['flow','facility','water','crossing','blockage'];
@@ -22,10 +23,12 @@ const valid=row=>row&&typeof row.id==='string'&&row.id.length<90&&types.includes
   Number.isFinite(row.at)&&row.at>=0&&Array.isArray(row.point)&&row.point.length===2&&row.point.every(Number.isFinite)&&
   row.point[0]>=22.13&&row.point[0]<=22.58&&row.point[1]>=113.81&&row.point[1]<=114.5;
 export function fieldEvidence(){
+  const merged=new Map(publishedObservations.filter(valid).map(row=>[row.id,row]));
   try{
     const rows=JSON.parse(localStorage.getItem(key)||'[]');
-    return Array.isArray(rows)?rows.filter(valid):[];
-  }catch{return [];}
+    if(Array.isArray(rows))for(const row of rows.filter(valid))merged.set(row.id,{...merged.get(row.id),...row});
+  }catch{}
+  return [...merged.values()].sort((a,b)=>a.at-b.at);
 }
 export function addFieldEvidence(records){
   try{

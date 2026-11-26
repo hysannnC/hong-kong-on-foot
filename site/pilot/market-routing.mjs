@@ -1,9 +1,9 @@
-import {centralCases,reviewCameraBatch} from './central-camera.mjs?v=55';
-import {evidenceDetails} from './evidence-details.mjs?v=55';
-import {downloadJSON} from './data-downloads.mjs?v=55';
-import {arReplayEvidence,cameraEvidence,evidenceNames,evidenceTime,fieldEvidence} from './field-evidence.mjs?v=55';
-import {drawRouteLines,fitTripComparison} from './trip-map.mjs?v=55';
-import {evidenceIcon,evidenceLegend,observationMarkers} from './evidence-markers.mjs?v=55';
+import {centralCases,reviewCameraBatch} from './central-camera.mjs?v=56';
+import {evidenceDetails} from './evidence-details.mjs?v=56';
+import {downloadJSON} from './data-downloads.mjs?v=56';
+import {arReplayEvidence,cameraEvidence,evidenceNames,evidenceTime,fieldEvidence} from './field-evidence.mjs?v=56';
+import {drawRouteLines,fitTripComparison} from './trip-map.mjs?v=56';
+import {evidenceIcon,evidenceLegend,observationMarkers} from './evidence-markers.mjs?v=56';
 
 const origin=[22.28332,114.15465],destination=[22.28468,114.1585];
 const cases=[
@@ -28,7 +28,7 @@ let worker,nextRequest=0;
 const requests=new Map();
 function route(impacts){
   if(!worker){
-    worker=new Worker('reach.js?v=55');
+    worker=new Worker('reach.js?v=56');
     worker.onmessage=({data})=>{
       requests.get(data.id)?.(data.route||null);
       requests.delete(data.id);
@@ -101,7 +101,7 @@ export function marketRoutePanel({root,map,layer,lang,planner=false,refit=false}
   };
   function update(){
     const token=++state.sequence, selected=events.filter(event=>state.enabled.has(event.kind)&&event.observations.length);
-    otherView.href='./?shell=55&fieldLoop=1&routeCase=market&caseKinds='+encodeURIComponent(selected.map(event=>event.kind).join(','))+
+    otherView.href='./?shell=56&fieldLoop=1&routeCase=market&caseKinds='+encodeURIComponent(selected.map(event=>event.kind).join(','))+
       (planner?'#mode=public&view=directions&lang=':'#mode=planner&view=trips&lang=')+lang;
     output.replaceChildren(css('p','subtle',t('Calculating routes on the walking network…','正在步行網絡計算路線…')));
     state.baseline??=route([]).then(result=>{if(!result)state.baseline=null;return result;});
@@ -188,7 +188,7 @@ export function marketRoutePanel({root,map,layer,lang,planner=false,refit=false}
       '將游標移至地圖符號、用鍵盤選取或點按，即可查看證據及跟進建議。照片為存檔參考。')),
     checks,output,
     css('div','study-options',
-      anchor(t('Street observations','街道觀察'),'./?shell=55&streetSub=observations#mode=planner&view=street&lang='+lang),
+      anchor(t('Street observations','街道觀察'),'./?shell=56&streetSub=observations#mode=planner&view=street&lang='+lang),
       otherView));
   update();
   return extent;

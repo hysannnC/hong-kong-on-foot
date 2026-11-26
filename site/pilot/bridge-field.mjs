@@ -1,11 +1,11 @@
-import {addFieldEvidence,arReplayEvidence,evidenceNames,evidenceTime,phoneObservation,trackPeople} from './field-evidence.mjs?v=55';
+import {addFieldEvidence,arReplayEvidence,evidenceNames,evidenceTime,phoneObservation,trackPeople} from './field-evidence.mjs?v=56';
 import {photos} from './street-photos.mjs';
-import {centralCases} from './central-camera.mjs?v=55';
+import {centralCases} from './central-camera.mjs?v=56';
 import {getDetector} from './vision.mjs';
 import {phoneSignals} from './phone-signals.mjs?v=23';
 import {nearestStreet} from './street-model.mjs';
-import {addTrip} from './street-store.mjs?v=55';
-import {arContext,replayEvents} from './trip-journey.mjs?v=55';
+import {addTrip} from './street-store.mjs?v=56';
+import {arContext,replayEvents} from './trip-journey.mjs?v=56';
 import {buildItinerary,distanceBetween,updateGuidance} from '../navigation.js';
 
 

@@ -1,7 +1,7 @@
-import {mountFieldStudy} from './bridge-field.mjs?v=55';
+import {mountFieldStudy} from './bridge-field.mjs?v=56';
 import {drawPhone} from './bridge-phone.mjs';
 import {buildWorld} from './bridge-world.mjs';
-import {rememberTrip,tripMapURL} from './trip-journey.mjs?v=55';
+import {rememberTrip,tripMapURL} from './trip-journey.mjs?v=56';
 import {duration,crowd as crowdArea,turnStart,turnEnd,notice,position,sensorTimeline} from './bridge-model.mjs';
 
 const $=id=>document.getElementById(id);

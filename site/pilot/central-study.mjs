@@ -1,17 +1,18 @@
-import {evidenceLegend,observationMarkers} from './evidence-markers.mjs?v=55';
-import {downloadCSV,downloadJSON} from './data-downloads.mjs?v=55';
-import {addFieldEvidence,cameraEvidence} from './field-evidence.mjs?v=55';
-import {observationPanel,evidenceLink} from './feedback-panel.mjs?v=55';
+import {evidenceLegend,observationMarkers} from './evidence-markers.mjs?v=56';
+import {downloadCSV,downloadJSON} from './data-downloads.mjs?v=56';
+import {addFieldEvidence,cameraEvidence,fieldEvidence} from './field-evidence.mjs?v=56';
+import {observationPanel,evidenceLink} from './feedback-panel.mjs?v=56';
 import {mapColor,mapGradient} from '../map-colors.mjs';
-import {edgeFlow,loadCentralNetwork,nearestFlowEdge} from './central-flow.mjs?v=55';
-import {centralCases,reviewCameraBatch} from './central-camera.mjs?v=55';
+import {edgeFlow,loadCentralNetwork,nearestFlowEdge} from './central-flow.mjs?v=56';
+import {centralCases,reviewCameraBatch} from './central-camera.mjs?v=56';
 import {getDetector} from './vision.mjs';
 import {photos} from './street-photos.mjs';
 import {benchmark} from './street-model.mjs';
 
 export function mountCentralStudy(root,map,layer){
   let lang='en',active=false,tab=new URLSearchParams(location.search).get('streetSub')==='observations'?'observations':'flow',hour=17,network,extent,pending,error=false,selected,selectionLayer;
-  let stage=0,results=[],filter='',panels={},photoId='pedder',observationSource='',savedBatch=false;
+  const requestedSource=new URLSearchParams(location.search).get('observationSource');
+  let stage=0,results=[],filter='',panels={},photoId='pedder',observationSource=['phone','ar-replay','cctv-replay'].includes(requestedSource)?requestedSource:'',savedBatch=false;
   const photoCounts=new Map();
   const t=(en,zh)=>lang==='zh'?zh:en;
   const el=(tag,...children)=>{const node=document.createElement(tag);node.append(...children);return node;};
@@ -38,6 +39,7 @@ export function mountCentralStudy(root,map,layer){
         visibleCases().map(([,entry])=>entry.where);
       focus(L.latLngBounds(points));
     }
+    else if(tab==='observations')focus(L.latLngBounds(fieldEvidence().filter(row=>!observationSource||row.source===observationSource).map(row=>row.point)));
   }
   function load(){
     if(network||pending)return;
@@ -330,11 +332,11 @@ export function mountCentralStudy(root,map,layer){
     const tabs=styled('div','study-options',
       button(t('Crowd flow','人流'),()=>{tab='flow';render();load();fit();},tab==='flow'),
       button(t('Camera replay','相機重播'),()=>{tab='cameras';render();fit();},tab==='cameras'),
-      button(t('Street observations','街道觀察'),()=>{tab='observations';render();},tab==='observations'));
+      button(t('Street observations','街道觀察'),()=>{tab='observations';render();fit();},tab==='observations'));
     const titles={flow:t('Central pedestrian network','中環行人網絡'),cameras:t('Central camera replay','中環相機重播'),
       observations:t('Street observations','街道觀察')};
     const detail=tab==='flow'?flow():tab==='cameras'?[demoVideo(),...cameras()]:
-      observationPanel({lang,map,layer,filter:observationSource,select:next=>{observationSource=next;render();}});
+      observationPanel({lang,map,layer,filter:observationSource,select:next=>{observationSource=next;render();fit();}});
     root.replaceChildren(el('h2',titles[tab]),tabs,...detail);
   }
   window.addEventListener('field-evidence-change',()=>{if(active&&tab==='observations')render();});

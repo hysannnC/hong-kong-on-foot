@@ -1,4 +1,4 @@
-import {demoTripById} from './demo-trips.mjs?v=55';
+import {demoTripById} from './demo-trips.mjs?v=56';
 import {distanceBetween} from '../navigation.js';
 import {inferObservations,studyPaths} from './bridge-study.mjs';
 import {approach,exampleDetour,exampleRamp} from './bridge-geography.mjs';
@@ -25,7 +25,7 @@ export function tripMapURL(lang,planner=false,compare=false){
   hash.set('mode',planner?'planner':'public');
   hash.set('view',planner?'trips':'directions');
   hash.set('lang',lang);
-  return './?shell=55&journey='+(planner?'analysis':'summary')+(compare?'&compare=1':'')+'#'+hash;
+  return './?shell=56&journey='+(planner?'analysis':'summary')+(compare?'&compare=1':'')+'#'+hash;
 }
 
 const labels={

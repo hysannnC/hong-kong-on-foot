@@ -1,5 +1,5 @@
-import {demoDetection} from './demo-detections.mjs?v=55';
-import {demoRoutes} from './demo-routes.mjs?v=55';
+import {demoDetection} from './demo-detections.mjs?v=56';
+import {demoRoutes} from './demo-routes.mjs?v=56';
 import {distanceBetween} from '../navigation.js';
 
 export const movementColors={normal:'#29865b',slow:'#df9136',stopped:'#c7514d'};
