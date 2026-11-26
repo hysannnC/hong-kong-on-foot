@@ -1,5 +1,5 @@
-import {demoTripById,movementColors} from './demo-trips.mjs?v=54';
-import {routeColors} from './trip-map.mjs?v=54';
+import {demoTripById,movementColors} from './demo-trips.mjs?v=55';
+import {routeColors} from './trip-map.mjs?v=55';
 export function summarizeTrips(trips){
   const count=predicate=>trips.filter(predicate).length;
   const sum=key=>trips.reduce((total,trip)=>total+(trip[key]??0),0);

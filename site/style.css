@@ -273,18 +273,19 @@ body[data-agent=evidence] .view-control,body[data-agent=evidence] #panel > :is(.
 .camera-detection-record{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
 .camera-detection-record summary{line-height:1.45}
 
-main.panel-collapsed{grid-template-columns:minmax(0,1fr);grid-template-areas:"map"}
-#panel-toggle{position:absolute;left:12px;bottom:48px;z-index:630;box-shadow:0 2px 10px #12353029}
+#panel-toggle{position:absolute;left:12px;bottom:48px;z-index:1000;box-shadow:0 2px 10px #12353029}
 .map-settings{background:#fff;border:1px solid #bfd2c6;border-radius:9px;padding:6px 8px;box-shadow:0 2px 10px #12353018}
 .map-settings summary{cursor:pointer;font-size:.8rem}
 .map-settings label{display:block;font-size:.78rem;font-weight:650;margin:7px 0 4px}
 .map-settings select{width:100%;font-size:.83rem;min-height:32px}
 
 .place-marker{overflow:hidden}
-main.panel-collapsed{grid-template-columns:minmax(0,1fr);grid-template-areas:"map"}
+main.panel-collapsed{min-height:0;grid-template-columns:minmax(0,1fr);grid-template-areas:"map"}
 @media(max-width:700px){
   main{height:calc(100dvh - var(--header));min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"map" "panel"}
-  main.panel-collapsed{grid-template-rows:minmax(0,1fr);grid-template-areas:"map"}
+  /* A collapsed map must override the earlier agent/review split-screen rules. */
+  body main.panel-collapsed{display:grid!important;height:calc(100dvh - var(--header))!important;min-height:0!important;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"map"}
+  body main.panel-collapsed > .map-frame{height:100%!important;min-height:0!important;max-height:none!important;align-self:stretch}
   .map-frame{height:auto;min-height:0}
   .panel{overflow:auto;overscroll-behavior:contain;border-top:1px solid var(--line)}
   #panel-toggle{left:8px;bottom:72px;min-height:39px;font-size:.8rem}

@@ -1,22 +1,22 @@
-import {downloadJSON} from './pilot/data-downloads.mjs?v=54';
-import {evidenceLink,routeFeedbackPanel} from './pilot/feedback-panel.mjs?v=54';
+import {downloadJSON} from './pilot/data-downloads.mjs?v=55';
+import {evidenceLink,routeFeedbackPanel} from './pilot/feedback-panel.mjs?v=55';
 import {mapColor as timeColor,mapGradient} from './map-colors.mjs';
-import {exampleRouteDistances,observationLabel,rememberARContext,tripMapURL,tripPaths,tripSnapshot} from './pilot/trip-journey.mjs?v=54';
-import {drawTripComparison,fitTripComparison} from './pilot/trip-map.mjs?v=54';
-import {mountStreetPanel} from './pilot/street-panel.mjs?v=54';
+import {exampleRouteDistances,observationLabel,rememberARContext,tripMapURL,tripPaths,tripSnapshot} from './pilot/trip-journey.mjs?v=55';
+import {drawTripComparison,fitTripComparison} from './pilot/trip-map.mjs?v=55';
+import {mountStreetPanel} from './pilot/street-panel.mjs?v=55';
 import {reviewId} from './pilot/bridge-study.mjs';
 import {mountBridgeReview} from './pilot/bridge-review.mjs';
 import {places as pilotPlaces, issues as pilotIssues} from './pilot/model.mjs';
-import {openScene} from './scene3d.js?v=54';
-import {markerKey,pinImage} from './pins.js?v=54';
-import {profiles,districts,neighbourhoods,locales} from './settings.js?v=54';
+import {openScene} from './scene3d.js?v=55';
+import {markerKey,pinImage} from './pins.js?v=55';
+import {profiles,districts,neighbourhoods,locales} from './settings.js?v=55';
 import {buildItinerary,distanceBetween,updateGuidance} from './navigation.js';
 
 const $=id=>document.getElementById(id);
 if(!$('route-ar')){
   const fresh=new URL(location.href);
   if(!fresh.searchParams.has('shell')){
-    fresh.searchParams.set('shell','54');
+    fresh.searchParams.set('shell','55');
     location.replace(fresh);
   }
   throw new Error('The page template needs to reload before starting the map.');
@@ -138,7 +138,7 @@ function openAR(){
     const frame=document.createElement('iframe');
     frame.title=pilotText('AR walking study','AR 步行研究');
     frame.allow='camera; geolocation; accelerometer; gyroscope; fullscreen';
-    frame.src='pilot/bridge.html?shell=54&map=1&embed=1&lang='+language;
+    frame.src='pilot/bridge.html?shell=55&map=1&embed=1&lang='+language;
     host.append(frame);
   }
   arShown=true;host.hidden=false;
@@ -176,7 +176,7 @@ function localizeAgents(){
     ['ar-description','Watch the IFC replay or use your phone camera and sensors to contribute a walking observation.','觀看國際金融中心重播，或使用相機及感測器提供步行觀察。'],
   ])$(id).textContent=pilotText(en,tc);
   $('route-feedback').href=evidenceLink(language,'market');
-  $('ar-standalone').href='pilot/bridge.html?shell=54&map=1&lang='+language;
+  $('ar-standalone').href='pilot/bridge.html?shell=55&map=1&lang='+language;
 }
 $('show-ar').onclick=openAR;
 $('ar-standalone').onclick=saveARContext;
@@ -348,6 +348,11 @@ function renderPanel(){
   panel.hidden=!panelOpen;
   panel.inert=!mode||!panelOpen;
   mapFrame.parentElement.classList.toggle('panel-collapsed',!panelOpen);
+  if(!panelOpen&&matchMedia('(max-width:700px)').matches)window.scrollTo({top:0,behavior:'instant'});
+  requestAnimationFrame(()=>{
+    map.invalidateSize({pan:false});
+    scene?.resize();
+  });
 }
 function mapCamera(){
   const centre=map.getCenter();

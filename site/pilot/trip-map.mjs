@@ -1,4 +1,4 @@
-import {observationLabel,tripMapIncidents,tripPaths} from './trip-journey.mjs?v=54';
+import {observationLabel,tripMapIncidents,tripPaths} from './trip-journey.mjs?v=55';
 
 export const routeColors={planned:'#29865b',travelled:'#df9136',ramp:'#703b86'};
 

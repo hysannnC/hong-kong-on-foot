@@ -1,4 +1,4 @@
-import {centralCases} from './central-camera.mjs?v=54';
+import {centralCases} from './central-camera.mjs?v=55';
 import {photos} from './street-photos.mjs';
 
 const kinds=['flow','blockage','facility','crossing','water','blockage'];

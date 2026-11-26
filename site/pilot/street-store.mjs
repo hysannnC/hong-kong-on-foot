@@ -1,5 +1,5 @@
 import {streets} from './street-model.mjs';
-import {publishedTrips} from './published-trips.mjs?v=54';
+import {publishedTrips} from './published-trips.mjs?v=55';
 
 const key='hk-on-foot.street-studies.v1';
 export const reports=['sign','barrier','personal','unsure'];
